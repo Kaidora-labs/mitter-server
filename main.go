@@ -1,28 +1,32 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/healthcheck"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/kaidora-labs/mitter-server/handlers"
 )
 
 func main() {
-	rootHandler := func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, world!")
-	}
+	// TODO: Read Environment Variables
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", rootHandler)
+	// TODO: Initialize Database Connection
 
-	server := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
-	}
+	app := fiber.New()
 
-	log.Println("Listening on port 8080...")
-	err := server.ListenAndServe()
+	// Middleware
+	app.Use(cors.New())
+	app.Use(logger.New())
+	app.Use(healthcheck.New())
 
-	if err != nil {
-		log.Fatalf("Server failed to start: %e", err)
-	}
+	// Routes
+	userGroup := app.Group("/users")
+
+	userGroup.Get("/", handlers.GetUsersHandler)
+	userGroup.Get("/:id", handlers.GetUserHandler)
+	userGroup.Post("/", handlers.PostUserHandler)
+
+	// Start the server
+	app.Listen(":8080")
 }
