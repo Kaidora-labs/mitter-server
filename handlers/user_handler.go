@@ -1,83 +1,106 @@
 package handlers
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 	"github.com/kaidora-labs/mitter-server/database"
 	"github.com/kaidora-labs/mitter-server/models"
 )
 
-func PostUserHandler(c *fiber.Ctx) error {
-	body := new(models.CreateUserDTO)
-	if err := c.BodyParser(body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"status":  "error",
-			"message": err.Error(),
-			"data":    nil,
-		})
-	}
+func GetUserHandler(c *gin.Context) {
+	id := c.Param("id")
 
-	newUser := models.User{
-		Id:           body.Id,
-		FirstName:    body.FirstName,
-		LastName:     body.LastName,
-		PhoneNumber:  body.PhoneNumber,
-		EmailAddress: body.EmailAddress,
-	}
-
-	userModel := models.NewUserModel(database.DB)
-	user, err := userModel.Save(&newUser)
+	userRepo := models.NewUserRepository(database.DB)
+	user, err := userRepo.Find(id)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		c.JSON(http.StatusNotFound, gin.H{
 			"status":  "error",
 			"message": err.Error(),
 			"data":    nil,
 		})
+
+		return
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"status":  "success",
-		"message": "User created successfully",
-		"data":    user,
-	})
-}
-
-func GetUserHandler(c *fiber.Ctx) error {
-	id := c.Params("id")
-
-	userModel := models.NewUserModel(database.DB)
-	user, err := userModel.Find(id)
-
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"status":  "error",
-			"message": err.Error(),
-			"data":    nil,
-		})
-	}
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "User retrieved successfully",
 		"data":    user,
 	})
 }
 
-func GetUsersHandler(c *fiber.Ctx) error {
-	userModel := models.NewUserModel(database.DB)
-	users, err := userModel.FindAll()
-
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+func PostUserHandler(c *gin.Context) {
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": err.Error(),
 			"data":    nil,
 		})
+
+		return
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+	userRepo := models.NewUserRepository(database.DB)
+	createdUser, err := userRepo.Save(&user)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    nil,
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status":  "success",
+		"message": "User created successfully",
+		"data":    createdUser,
+	})
+}
+
+func GetUsersHandler(c *gin.Context) {
+	userRepo := models.NewUserRepository(database.DB)
+	users, err := userRepo.FindAll()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "Users retrieved successfully",
 		"data":    users,
+	})
+}
+
+func DeleteUserHandler(c *gin.Context) {
+	id := c.Param("id")
+
+	userRepo := models.NewUserRepository(database.DB)
+	err := userRepo.Delete(id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+			"data":    nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "User deleted successfully",
+		"data":    nil,
 	})
 }

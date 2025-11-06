@@ -12,13 +12,12 @@ import (
 var DB *gorm.DB
 
 func Connect() error {
-	var err error
-
-	uri := os.Getenv("DB_URL")
+	uri := os.Getenv("DB_URI")
 	if uri == "" {
 		return fmt.Errorf("DB URI is empty")
 	}
 
+	var err error
 	DB, err = gorm.Open(postgres.Open(uri), &gorm.Config{})
 	if err != nil {
 		return err

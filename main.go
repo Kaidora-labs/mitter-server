@@ -1,32 +1,40 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/healthcheck"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"log"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/kaidora-labs/mitter-server/database"
 	"github.com/kaidora-labs/mitter-server/handlers"
 )
 
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	err = database.Connect()
+	if err != nil {
+		log.Fatalf("Failed to connect to the database: %s\n", err)
+	}
+}
+
 func main() {
-	// TODO: Read Environment Variables
+	router := gin.Default()
+	router.SetTrustedProxies(nil)
 
-	// TODO: Initialize Database Connection
+	userGroup := router.Group("/users")
 
-	app := fiber.New()
+	userGroup.GET("/", handlers.GetUsersHandler)
+	userGroup.POST("/", handlers.PostUserHandler)
+	userGroup.GET("/:id", handlers.GetUserHandler)
 
-	// Middleware
-	app.Use(cors.New())
-	app.Use(logger.New())
-	app.Use(healthcheck.New())
-
-	// Routes
-	userGroup := app.Group("/users")
-
-	userGroup.Get("/", handlers.GetUsersHandler)
-	userGroup.Get("/:id", handlers.GetUserHandler)
-	userGroup.Post("/", handlers.PostUserHandler)
-
-	// Start the server
-	app.Listen(":8080")
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "OK",
+		})
+	})
+	router.Run()
 }

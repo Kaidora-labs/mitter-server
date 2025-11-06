@@ -4,45 +4,18 @@ import (
 	"gorm.io/gorm"
 )
 
-// User model for the application
 type User struct {
 	gorm.Model
-	Id           string `json:"id"`
-	FirstName    string `json:"firstName"`
-	LastName     string `json:"lastName"`
-	PhoneNumber  string `json:"phoneNumber"`
-	EmailAddress string `json:"emailAddress"`
+	FirstName    string `json:"firstName" binding:"required"`
+	LastName     string `json:"lastName" binding:"required"`
+	UserName     string `json:"userName" binding:"required" gorm:"uniqueIndex"`
+	PhoneNumber  string `json:"phoneNumber" binding:"required" gorm:"uniqueIndex"`
+	EmailAddress string `json:"emailAddress" binding:"required" gorm:"uniqueIndex"`
 }
 
-// DTOs (Data Transfer Objects) for User
-type CreateUserDTO struct {
-	Id           string `json:"id"`
-	FirstName    string `json:"firstName"`
-	LastName     string `json:"lastName"`
-	EmailAddress string `json:"emailAddress"`
-	PhoneNumber  string `json:"phoneNumber"`
-}
-
-type GetUserDTO struct {
-	Id string `json:"id"`
-}
-
-type UpdateUserDTO struct {
-	Id           string `json:"id"`
-	FirstName    string `json:"firstName"`
-	LastName     string `json:"lastName"`
-	EmailAddress string `json:"emailAddress"`
-}
-
-type DeleteUserDTO struct {
-	Id string `json:"id"`
-}
-
-// User Repository interface for database operations
 type UserRepository interface {
 	Find(id string) (*User, error)
 	Save(user *User) (*User, error)
-	Update(user *User) (*User, error)
 	Delete(id string) error
 	FindAll() (*[]User, error)
 }
@@ -51,7 +24,7 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-func NewUserModel(db *gorm.DB) UserRepository {
+func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db}
 }
 
@@ -82,14 +55,6 @@ func (r *userRepository) Find(id string) (*User, error) {
 		return nil, err
 	}
 	return &user, nil
-}
-
-func (r *userRepository) Update(user *User) (*User, error) {
-	err := r.db.Save(&user).Error
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
 }
 
 func (r *userRepository) Delete(id string) error {
