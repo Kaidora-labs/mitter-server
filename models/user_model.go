@@ -9,15 +9,17 @@ type User struct {
 	FirstName    string `json:"firstName" binding:"required"`
 	LastName     string `json:"lastName" binding:"required"`
 	UserName     string `json:"userName" binding:"required" gorm:"uniqueIndex"`
+	Password     string `json:"password" binding:"required"`
 	PhoneNumber  string `json:"phoneNumber" binding:"required" gorm:"uniqueIndex"`
 	EmailAddress string `json:"emailAddress" binding:"required" gorm:"uniqueIndex"`
 }
 
 type UserRepository interface {
-	Find(id string) (*User, error)
 	Save(user *User) (*User, error)
 	Delete(id string) error
 	FindAll() (*[]User, error)
+	Find(id string) (*User, error)
+	FindByUsername(username string) (*User, error)
 }
 
 type userRepository struct {
@@ -51,6 +53,15 @@ func (r *userRepository) FindAll() (*[]User, error) {
 func (r *userRepository) Find(id string) (*User, error) {
 	var user User
 	err := r.db.Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) FindByUsername(username string) (*User, error) {
+	var user User
+	err := r.db.Where("user_name = ?", username).First(&user).Error
 	if err != nil {
 		return nil, err
 	}

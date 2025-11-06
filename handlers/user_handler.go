@@ -16,7 +16,6 @@ func GetUserHandler(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"status":  "error",
 			"message": err.Error(),
 			"data":    nil,
 		})
@@ -25,7 +24,6 @@ func GetUserHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
 		"message": "User retrieved successfully",
 		"data":    user,
 	})
@@ -35,7 +33,6 @@ func PostUserHandler(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
 			"message": err.Error(),
 			"data":    nil,
 		})
@@ -43,12 +40,23 @@ func PostUserHandler(c *gin.Context) {
 		return
 	}
 
+	encryptedPassword, err := HashPassword(user.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Could not hash password",
+			"data":    nil,
+		})
+
+		return
+	}
+
+	user.Password = encryptedPassword
+
 	userRepo := models.NewUserRepository(database.DB)
 	createdUser, err := userRepo.Save(&user)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
 			"message": err.Error(),
 			"data":    nil,
 		})
@@ -57,7 +65,6 @@ func PostUserHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"status":  "success",
 		"message": "User created successfully",
 		"data":    createdUser,
 	})
@@ -69,7 +76,6 @@ func GetUsersHandler(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
 			"message": err.Error(),
 			"data":    nil,
 		})
@@ -77,7 +83,6 @@ func GetUsersHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
 		"message": "Users retrieved successfully",
 		"data":    users,
 	})
@@ -91,7 +96,6 @@ func DeleteUserHandler(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
 			"message": err.Error(),
 			"data":    nil,
 		})
@@ -99,7 +103,6 @@ func DeleteUserHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
 		"message": "User deleted successfully",
 		"data":    nil,
 	})
