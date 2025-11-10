@@ -1,5 +1,10 @@
 package repositories
 
+import (
+	"context"
+	"time"
+)
+
 func (r *Repo) SaveUser(user *User) (*User, error) {
 	err := r.db.Create(&user).Error
 	if err != nil {
@@ -62,6 +67,21 @@ func (r *Repo) FindUserByEmailAddress(emailAddress string) (*User, error) {
 	var user User
 
 	err := r.db.Where("email_address = ?", emailAddress).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *Repo) CacheUser(ctx context.Context, user *User) error {
+	return r.cache.Set(ctx, user.EmailAddress, user, 30*time.Minute).Err()
+}
+
+func (r *Repo) RetrieveUser(ctx context.Context, emailAddress string) (*User, error) {
+	var user User
+
+	err := r.cache.Get(ctx, emailAddress).Scan(&user)
 	if err != nil {
 		return nil, err
 	}

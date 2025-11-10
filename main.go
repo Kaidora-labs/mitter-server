@@ -34,6 +34,7 @@ func main() {
 	userGroup.GET("/", handlers.GetUsersHandler)
 	userGroup.POST("/", handlers.PostUserHandler)
 	userGroup.GET("/:id", handlers.GetUserHandler)
+	userGroup.DELETE("/:id", handlers.DeleteUserHandler)
 
 	businessGroup := router.Group("/businesses")
 	businessGroup.GET("/:id", handlers.GetBusinessHandler)

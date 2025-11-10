@@ -1,8 +1,10 @@
 package services
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"text/template"
 
 	"github.com/resend/resend-go/v3"
 )
@@ -23,10 +25,27 @@ func NewMailService() (*MailService, error) {
 }
 
 func (m *MailService) SendOTP(to string, otp string) error {
+	data := struct {
+		OTP string
+	}{
+		OTP: otp,
+	}
+
+	temp, err := template.ParseFiles("templates/otp.tmpl")
+	if err != nil {
+		return err
+	}
+
+	var b bytes.Buffer
+	err = temp.Execute(&b, data)
+	if err != nil {
+		return err
+	}
+
 	emailParams := &resend.SendEmailRequest{
-		From:    "Mitter <onboarding@ximon.dev>",
+		From:    "Mitter <onboarding@mail.ximon.dev>",
 		To:      []string{to},
-		Html:    "<strong>hello world</strong>",
+		Html:    b.String(),
 		Subject: "OTP Verification",
 	}
 
