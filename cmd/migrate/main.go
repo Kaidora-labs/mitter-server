@@ -2,12 +2,9 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/kaidora-labs/mitter-server/models"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/kaidora-labs/mitter-server/repositories"
 )
 
 func main() {
@@ -16,19 +13,15 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	uri := os.Getenv("DB_URI")
-	if uri == "" {
-		log.Fatal("DB_URI is not set")
-	}
-
-	DB, err := gorm.Open(postgres.Open(uri), &gorm.Config{})
+	err = repositories.Connect()
 	if err != nil {
-		log.Fatal("Database Connection Failed ")
+		log.Fatalf("Database connection failed: %v\n", err)
 	}
 
-	err = DB.AutoMigrate(&models.User{})
+	err = repositories.Migrate()
 	if err != nil {
-		log.Fatal("Database Migration Failed")
+		log.Fatalf("Database migration failed: %v\n", err)
 	}
 
+	log.Println("Database migration completed successfully")
 }

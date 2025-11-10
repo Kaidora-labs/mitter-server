@@ -2,35 +2,23 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/kaidora-labs/mitter-server/database"
 	"github.com/kaidora-labs/mitter-server/handlers"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/kaidora-labs/mitter-server/repositories"
 )
 
 func init() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalln("Error loading .env file")
 	}
 
-	database.DB, err = gorm.Open(postgres.Open(os.Getenv("DB_URI")), &gorm.Config{})
+	err = repositories.Connect()
 	if err != nil {
-		log.Fatal("Database")
-
+		log.Fatalf("Database connection failed: %v", err)
 	}
-
-	if database.CACHE = redis.NewClient(&redis.Options{
-		Addr: os.Getenv("CACHE_ADDR"),
-	}); database.CACHE == nil {
-		log.Fatal("Redis Connection Failed")
-	}
-
 }
 
 func main() {
@@ -38,15 +26,19 @@ func main() {
 	router.SetTrustedProxies(nil)
 
 	authGroup := router.Group("/auth")
-	authGroup.POST("/login", handlers.LoginHandler)
-	authGroup.POST("/register", handlers.RegisterHandler)
+	authGroup.POST("/initiate", handlers.InitiateHandler)
 	authGroup.POST("/validate", handlers.ValidateHandler)
-	authGroup.POST("/forgot-password", handlers.ForgotPasswordHandler)
+	authGroup.POST("/reset", handlers.ResetHandler)
 
 	userGroup := router.Group("/users")
 	userGroup.GET("/", handlers.GetUsersHandler)
 	userGroup.POST("/", handlers.PostUserHandler)
 	userGroup.GET("/:id", handlers.GetUserHandler)
+
+	businessGroup := router.Group("/businesses")
+	businessGroup.GET("/:id", handlers.GetBusinessHandler)
+	businessGroup.PATCH("/:id", handlers.UpdateBusinessHandler)
+	businessGroup.DELETE("/:id", handlers.DeleteBusinessHandler)
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
