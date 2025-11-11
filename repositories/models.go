@@ -1,8 +1,6 @@
 package repositories
 
 import (
-	"database/sql"
-
 	"gorm.io/gorm"
 )
 
@@ -18,15 +16,14 @@ const (
 // TODO: Add Struct Binding Validation
 type User struct {
 	gorm.Model
-	FirstName     string         `json:"firstName"`
-	LastName      string         `json:"lastName"`
-	Password      string         `json:"password"`
-	PhoneNumber   string         `json:"phoneNumber" gorm:"uniqueIndex"`
-	EmailAddress  string         `json:"emailAddress" gorm:"uniqueIndex"`
-	WalletAddress sql.NullString `json:"walletAddress" gorm:"uniqueIndex"`
-	Businesses    []Business     `json:"business_id"`
-	Role          Role           `json:"role"`
-	OTP           string         `gorm:"-:all"`
+	FirstName     string     `json:"firstName"`
+	LastName      string     `json:"lastName"`
+	PhoneNumber   string     `json:"phoneNumber" gorm:"uniqueIndex"`
+	EmailAddress  string     `json:"emailAddress" gorm:"uniqueIndex"`
+	WalletAddress *string    `json:"walletAddress" gorm:"uniqueIndex"`
+	Businesses    []Business `json:"businesses"`
+	Role          Role       `json:"role"`
+	Password      string     `json:"-"`
 }
 
 type BusinessType = string

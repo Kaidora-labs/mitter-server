@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9/maintnotifications"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -33,6 +34,12 @@ func Connect() error {
 	opt, err := redis.ParseURL(cacheUrl)
 	if err != nil {
 		return fmt.Errorf("invalid CACHE_URL: %w", err)
+	}
+
+	// BUG: This is an issue from redis/go-redis. Update once fixed
+	// https://github.com/redis/go-redis/issues/3536
+	opt.MaintNotificationsConfig = &maintnotifications.Config{
+		Mode: maintnotifications.ModeDisabled,
 	}
 
 	cache = redis.NewClient(opt)

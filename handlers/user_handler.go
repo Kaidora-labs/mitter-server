@@ -70,19 +70,16 @@ func PostUserHandler(c *gin.Context) {
 
 		return
 	}
+	user.Password = encryptedPassword
 
-	otp, err := services.GenerateOTP(6)
-	if err != nil {
+	if err := repo.SaveUser(&user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Could not generate OTP",
+			"message": "Could not create user",
 			"error":   err.Error(),
 		})
 
 		return
 	}
-
-	user.Password = encryptedPassword
-	user.OTP = otp
 
 	mailer, err := services.NewMailService()
 	if err != nil {
@@ -94,8 +91,17 @@ func PostUserHandler(c *gin.Context) {
 		return
 	}
 
-	err = mailer.SendOTP(user.EmailAddress, user.OTP)
+	otp, err := services.GenerateOTP(6)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Could not generate OTP",
+			"error":   err.Error(),
+		})
+
+		return
+	}
+
+	if err := mailer.SendOTP(user.EmailAddress, otp); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Could not send OTP",
 			"error":   err.Error(),
@@ -104,10 +110,9 @@ func PostUserHandler(c *gin.Context) {
 		return
 	}
 
-	err = repo.CacheUser(c, &user)
-	if err != nil {
+	if err := repo.StoreOTP(c, user.EmailAddress, otp); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Could not cache user",
+			"message": "Could not cache OTP",
 			"error":   err.Error(),
 		})
 
