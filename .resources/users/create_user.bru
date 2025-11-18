@@ -7,18 +7,18 @@ meta {
 post {
   url: {{BASE_URL}}/users
   body: json
-  auth: inherit
+  auth: bearer
 }
 
 body:json {
   {
-    "first_name": "Simon",
-    "last_name": "Samuel",
-    "phone_number": "{{PHONE_NUMBER}}",
-    "email_address": "{{EMAIL_ADDRESS}}",
-    "wallet_address": "{{WALLET_ADDRESS}}",
+    "firstName": "Simon",
+    "lastName": "Samuel",
+    "phoneNumber": "{{PHONE_NUMBER}}",
+    "emailAddress": "{{EMAIL_ADDRESS}}",
+    "walletAddress": "{{WALLET_ADDRESS}}",
     "password": "{{PASSWORD}}",
-    "role": "USER"
+    "role": "INDIVIDUAL"
   }
 }
 

@@ -1,6 +1,9 @@
 package repositories
 
 import (
+	"fmt"
+
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -8,24 +11,34 @@ import (
 type Role = string
 
 const (
+	Admin      Role = "ADMIN"
 	Proprietor Role = "PROPRIETOR"
 	Individual Role = "INDIVIDUAL"
 )
 
-// TODO: Switch to UUID for ID
-// TODO: Add Struct Binding Validation
 type User struct {
 	gorm.Model
+	ID            uuid.UUID  `json:"id" gorm:"type:uuid"`
 	FirstName     string     `json:"firstName"`
 	LastName      string     `json:"lastName"`
 	PhoneNumber   string     `json:"phoneNumber" gorm:"uniqueIndex"`
 	EmailAddress  string     `json:"emailAddress" gorm:"uniqueIndex"`
-	WalletAddress *string    `json:"walletAddress" gorm:"uniqueIndex"`
+	WalletAddress string     `json:"walletAddress" gorm:"uniqueIndex"`
 	Businesses    []Business `json:"businesses"`
 	Role          Role       `json:"role"`
 	Password      string     `json:"-"`
 }
 
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	u.ID = uuid.New()
+	if u.Role == Admin {
+		return fmt.Errorf("invalid role")
+	}
+
+	return nil
+}
+
+// TODO: Implement Enum in DB
 type BusinessType = string
 
 const (
@@ -34,13 +47,12 @@ const (
 	PublicLimited  BusinessType = "PUBLIC_LIMITED"
 )
 
-// TODO: Switch to UUID for ID
-// TODO: Add Struct Binding Validation
 type Business struct {
 	gorm.Model
+	ID        uuid.UUID    `json:"id" gorm:"type:uuid"`
+	UserID    uuid.UUID    `json:"userId" gorm:"foreignKey"`
 	Name      string       `json:"name"`
 	Address   string       `json:"address"`
 	CacNumber uint64       `json:"cacNumber" gorm:"uniqueIndex"`
-	UserID    uint         `json:"user_id" gorm:"foreignKey"`
 	Type      BusinessType `json:"type"`
 }

@@ -4,16 +4,25 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/kaidora-labs/mitter-server/repositories"
 	"github.com/kaidora-labs/mitter-server/services"
 )
 
 func GetUserHandler(c *gin.Context) {
-	id := c.Param("id")
-
 	repo := repositories.New()
-	user, err := repo.FindUser(id)
 
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid user ID",
+			"error":   err.Error(),
+		})
+
+		return
+	}
+
+	user, err := repo.FindUser(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "User not found",
@@ -50,9 +59,9 @@ func GetUsersHandler(c *gin.Context) {
 
 func PostUserHandler(c *gin.Context) {
 	repo := repositories.New()
-	var user repositories.User
 
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var params repositories.CreateUserParams
+	if err := c.ShouldBindJSON(&params); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Missing or invalid fields",
 			"error":   err.Error(),
@@ -61,7 +70,7 @@ func PostUserHandler(c *gin.Context) {
 		return
 	}
 
-	encryptedPassword, err := services.HashPassword(user.Password)
+	encryptedPassword, err := services.HashPassword(params.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Could not hash password",
@@ -70,9 +79,10 @@ func PostUserHandler(c *gin.Context) {
 
 		return
 	}
-	user.Password = encryptedPassword
+	params.Password = encryptedPassword
 
-	if err := repo.SaveUser(&user); err != nil {
+	user, err := repo.SaveUser(&params)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Could not create user",
 			"error":   err.Error(),
@@ -110,7 +120,7 @@ func PostUserHandler(c *gin.Context) {
 		return
 	}
 
-	if err := repo.StoreOTP(c, user.EmailAddress, otp); err != nil {
+	if err := repo.StoreOTP(c, user.ID, otp); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Could not cache OTP",
 			"error":   err.Error(),
@@ -126,12 +136,19 @@ func PostUserHandler(c *gin.Context) {
 }
 
 func DeleteUserHandler(c *gin.Context) {
-	id := c.Param("id")
-
 	repo := repositories.New()
-	err := repo.DeleteUser(id)
 
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid user ID",
+			"error":   err.Error(),
+		})
+
+		return
+	}
+
+	if err := repo.DeleteUser(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Could not delete user",
 			"error":   err.Error(),

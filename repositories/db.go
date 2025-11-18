@@ -1,9 +1,12 @@
 package repositories
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/redis/go-redis/v9/maintnotifications"
 	"gorm.io/driver/postgres"
@@ -12,6 +15,15 @@ import (
 
 var cache *redis.Client
 var database *gorm.DB
+
+type Repo struct {
+	db    *gorm.DB
+	cache *redis.Client
+}
+
+func New() *Repo {
+	return &Repo{database, cache}
+}
 
 func Connect() error {
 	var err error
@@ -36,7 +48,7 @@ func Connect() error {
 		return fmt.Errorf("invalid CACHE_URL: %w", err)
 	}
 
-	// BUG: This is an issue from redis/go-redis. Update once fixed
+	// BUG: This is an issue from redis/go-redis. Update once fixed upstream
 	// https://github.com/redis/go-redis/issues/3536
 	opt.MaintNotificationsConfig = &maintnotifications.Config{
 		Mode: maintnotifications.ModeDisabled,
@@ -62,11 +74,29 @@ func Migrate() error {
 	return nil
 }
 
-type Repo struct {
-	db    *gorm.DB
-	cache *redis.Client
+func (r *Repo) StoreOTP(ctx context.Context, id uuid.UUID, otp string) error {
+	err := r.cache.Set(ctx, id.String(), otp, 30*time.Minute).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func New() *Repo {
-	return &Repo{database, cache}
+func (r *Repo) RetrieveOTP(ctx context.Context, id uuid.UUID) (string, error) {
+	otp, err := r.cache.Get(ctx, id.String()).Result()
+	if err != nil {
+		return "", err
+	}
+
+	return otp, nil
+}
+
+func (r *Repo) DeleteOTP(ctx context.Context, id uuid.UUID) error {
+	err := r.cache.Del(ctx, id.String()).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

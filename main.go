@@ -25,21 +25,18 @@ func main() {
 	router := gin.Default()
 	router.SetTrustedProxies(nil)
 
-	authGroup := router.Group("/auth")
-	authGroup.POST("/initiate", handlers.InitiateHandler)
-	authGroup.POST("/validate", handlers.ValidateHandler)
-	authGroup.POST("/reset", handlers.ResetHandler)
+	router.POST("/auth/initiate", handlers.InitiateHandler)
+	router.POST("/auth/validate", handlers.ValidateHandler)
+	router.POST("/auth/reset", handlers.ResetHandler)
 
-	userGroup := router.Group("/users")
-	userGroup.GET("/", handlers.GetUsersHandler)
-	userGroup.POST("/", handlers.PostUserHandler)
-	userGroup.GET("/:id", handlers.GetUserHandler)
-	userGroup.DELETE("/:id", handlers.DeleteUserHandler)
+	router.GET("/users", handlers.GetUsersHandler)
+	router.GET("/users/:id", handlers.GetUserHandler)
+	router.POST("/users", handlers.PostUserHandler)
+	router.DELETE("/users/:id", handlers.DeleteUserHandler)
 
-	businessGroup := router.Group("/businesses")
-	businessGroup.GET("/:id", handlers.GetBusinessHandler)
-	businessGroup.PATCH("/:id", handlers.UpdateBusinessHandler)
-	businessGroup.DELETE("/:id", handlers.DeleteBusinessHandler)
+	router.GET("/businesses/:id", handlers.GetBusinessHandler)
+	router.PATCH("/businesses/:id", handlers.UpdateBusinessHandler)
+	router.DELETE("/businesses/:id", handlers.DeleteBusinessHandler)
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{

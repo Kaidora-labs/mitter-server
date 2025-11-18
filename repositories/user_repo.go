@@ -1,15 +1,39 @@
 package repositories
 
-func (r *Repo) SaveUser(user *User) error {
-	err := r.db.Create(&user).Error
-	if err != nil {
-		return err
-	}
+import "github.com/google/uuid"
 
-	return nil
+type CreateUserParams struct {
+	FirstName     string     `json:"firstName" binding:"required,min=2,max=50"`
+	LastName      string     `json:"lastName" binding:"required,min=2,max=50"`
+	PhoneNumber   string     `json:"phoneNumber" binding:"required,e164"`
+	EmailAddress  string     `json:"emailAddress" binding:"required,email"`
+	WalletAddress string     `json:"walletAddress" binding:"required"`
+	Password      string     `json:"password" binding:"required,min=8"`
+	Role          Role       `json:"role" binding:"required,oneof=PROPRIETOR INDIVIDUAL"`
+	Businesses    []Business `json:"businesses"`
 }
 
-func (r *Repo) DeleteUser(id string) error {
+func (r *Repo) SaveUser(params *CreateUserParams) (*User, error) {
+	user := User{
+		FirstName:     params.FirstName,
+		LastName:      params.LastName,
+		PhoneNumber:   params.PhoneNumber,
+		EmailAddress:  params.EmailAddress,
+		WalletAddress: params.WalletAddress,
+		Password:      params.Password,
+		Role:          params.Role,
+		Businesses:    params.Businesses,
+	}
+
+	err := r.db.Create(&user).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *Repo) DeleteUser(id uuid.UUID) error {
 	var user User
 
 	err := r.db.Where("id = ?", id).First(&user).Error
@@ -25,7 +49,7 @@ func (r *Repo) DeleteUser(id string) error {
 	return nil
 }
 
-func (r *Repo) FindUser(id string) (*User, error) {
+func (r *Repo) FindUser(id uuid.UUID) (*User, error) {
 	var user User
 
 	err := r.db.Where("id = ?", id).First(&user).Error
