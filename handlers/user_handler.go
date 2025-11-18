@@ -14,9 +14,9 @@ func GetUserHandler(c *gin.Context) {
 
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid user ID",
-			"error":   err.Error(),
+		c.JSON(http.StatusBadRequest, Result{
+			Message: "Invalid user ID",
+			Error:   err.Error(),
 		})
 
 		return
@@ -24,17 +24,17 @@ func GetUserHandler(c *gin.Context) {
 
 	user, err := repo.FindUser(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "User not found",
-			"error":   err.Error(),
+		c.JSON(http.StatusNotFound, Result{
+			Message: "User not found",
+			Error:   err.Error(),
 		})
 
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "User retrieved successfully",
-		"data":    user,
+	c.JSON(http.StatusOK, Result{
+		Message: "User retrieved successfully",
+		Data:    user,
 	})
 }
 
@@ -43,17 +43,17 @@ func GetUsersHandler(c *gin.Context) {
 	users, err := repo.FindAllUsers()
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Could not retrieve users",
-			"error":   err.Error(),
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve users",
+			Error:   err.Error(),
 		})
 
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Users retrieved successfully",
-		"data":    users,
+	c.JSON(http.StatusOK, Result{
+		Message: "Users retrieved successfully",
+		Data:    users,
 	})
 }
 
@@ -62,9 +62,9 @@ func PostUserHandler(c *gin.Context) {
 
 	var params repositories.CreateUserParams
 	if err := c.ShouldBindJSON(&params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Missing or invalid fields",
-			"error":   err.Error(),
+		c.JSON(http.StatusBadRequest, Result{
+			Message: "Missing or invalid fields",
+			Error:   err.Error(),
 		})
 
 		return
@@ -72,9 +72,9 @@ func PostUserHandler(c *gin.Context) {
 
 	encryptedPassword, err := services.HashPassword(params.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Could not hash password",
-			"error":   err.Error(),
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not hash password",
+			Error:   err.Error(),
 		})
 
 		return
@@ -83,9 +83,9 @@ func PostUserHandler(c *gin.Context) {
 
 	user, err := repo.SaveUser(&params)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Could not create user",
-			"error":   err.Error(),
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not create user",
+			Error:   err.Error(),
 		})
 
 		return
@@ -93,9 +93,9 @@ func PostUserHandler(c *gin.Context) {
 
 	mailer, err := services.NewMailService()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Mail service down",
-			"error":   err.Error(),
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Mail service down",
+			Error:   err.Error(),
 		})
 
 		return
@@ -103,35 +103,35 @@ func PostUserHandler(c *gin.Context) {
 
 	otp, err := services.GenerateOTP(6)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Could not generate OTP",
-			"error":   err.Error(),
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not generate OTP",
+			Error:   err.Error(),
 		})
 
 		return
 	}
 
 	if err := mailer.SendOTP(user.EmailAddress, otp); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Could not send OTP",
-			"error":   err.Error(),
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not send OTP",
+			Error:   err.Error(),
 		})
 
 		return
 	}
 
 	if err := repo.StoreOTP(c, user.ID, otp); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Could not cache OTP",
-			"error":   err.Error(),
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not cache OTP",
+			Error:   err.Error(),
 		})
 
 		return
 	}
 
-	c.JSON(http.StatusAccepted, gin.H{
-		"message": "User verification in progress",
-		"data":    user,
+	c.JSON(http.StatusAccepted, Result{
+		Message: "User verification in progress",
+		Data:    user,
 	})
 }
 
@@ -140,25 +140,25 @@ func DeleteUserHandler(c *gin.Context) {
 
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid user ID",
-			"error":   err.Error(),
+		c.JSON(http.StatusBadRequest, Result{
+			Message: "Invalid user ID",
+			Error:   err.Error(),
 		})
 
 		return
 	}
 
 	if err := repo.DeleteUser(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Could not delete user",
-			"error":   err.Error(),
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not delete user",
+			Error:   err.Error(),
 		})
 
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "User deleted successfully",
-		"data":    nil,
+	c.JSON(http.StatusOK, Result{
+		Message: "User deleted successfully",
+		Data:    nil,
 	})
 }

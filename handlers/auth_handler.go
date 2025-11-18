@@ -8,11 +8,6 @@ import (
 	"github.com/kaidora-labs/mitter-server/services"
 )
 
-type Credentials struct {
-	EmailAddress string `json:"emailAddress" binding:"required"`
-	Password     string `json:"password" binding:"required"`
-}
-
 func InitiateHandler(c *gin.Context) {
 	var credentials Credentials
 
