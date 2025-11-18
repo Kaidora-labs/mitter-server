@@ -1,17 +1,17 @@
 meta {
-  name: get user
+  name: Delete User
   type: http
-  seq: 1
+  seq: 4
 }
 
-get {
-  url: {{BASE_URL}}/users?id=1
+delete {
+  url: {{BASE_URL}}/users/:id
   body: none
   auth: inherit
 }
 
-params:query {
-  id: 1
+params:path {
+  id: {{USER_ID}}
 }
 
 settings {

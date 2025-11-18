@@ -1,13 +1,17 @@
 meta {
-  name: initiate
+  name: Get User
   type: http
-  seq: 1
+  seq: 2
 }
 
-post {
-  url: {{BASE_URL}}/auth/initiate
+get {
+  url: {{BASE_URL}}/users/:id
   body: none
   auth: inherit
+}
+
+params:path {
+  id: {{USER_ID}}
 }
 
 settings {
