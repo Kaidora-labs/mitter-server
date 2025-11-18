@@ -40,7 +40,8 @@ func main() {
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"status": "OK",
+			"message": "Service is up",
+			"data":    "OK",
 		})
 	})
 
