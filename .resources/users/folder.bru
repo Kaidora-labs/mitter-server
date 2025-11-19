@@ -1,0 +1,17 @@
+meta {
+  name: users
+  seq: 2
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{TOKEN}}
+}
+
+vars:pre-request {
+  USER_ID: {{process.env.USER_ID}}
+  TOKEN: {{process.env.TOKEN}}
+}

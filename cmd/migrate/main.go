@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/joho/godotenv"
-	"github.com/kaidora-labs/mitter-server/database"
+	"github.com/kaidora-labs/mitter-server/repositories"
 )
 
 func main() {
@@ -13,8 +13,15 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	err = database.Migrate()
+	err = repositories.Connect()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Database connection failed: %v\n", err)
 	}
+
+	err = repositories.Migrate()
+	if err != nil {
+		log.Fatalf("Database migration failed: %v\n", err)
+	}
+
+	log.Println("Database migration completed successfully")
 }

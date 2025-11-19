@@ -4,103 +4,130 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kaidora-labs/mitter-server/database"
-	"github.com/kaidora-labs/mitter-server/models"
+	"github.com/google/uuid"
+	"github.com/kaidora-labs/mitter-server/repositories"
+	"github.com/kaidora-labs/mitter-server/services"
 )
 
 func GetUserHandler(c *gin.Context) {
-	id := c.Param("id")
+	repo := repositories.New()
 
-	userRepo := models.NewUserRepository(database.DB)
-	user, err := userRepo.Find(id)
+	value, exists := c.Get(services.ClaimsKey{})
+	if !exists {
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve user claims",
+			Error:   "User claims not found in context",
+		})
+		return
+	}
 
+	claims, ok := value.(*services.Claims)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve user claims",
+			Error:   "Invalid claims format",
+		})
+		return
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  "error",
-			"message": err.Error(),
-			"data":    nil,
+		c.JSON(http.StatusBadRequest, Result{
+			Message: "Invalid user ID",
+			Error:   err.Error(),
 		})
-
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "User retrieved successfully",
-		"data":    user,
-	})
-}
-
-func PostUserHandler(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"message": err.Error(),
-			"data":    nil,
+	if claims.ID != id {
+		c.JSON(http.StatusForbidden, Result{
+			Message: "Access denied",
+			Error:   "You do not have permission to access this user",
 		})
-
 		return
 	}
 
-	userRepo := models.NewUserRepository(database.DB)
-	createdUser, err := userRepo.Save(&user)
-
+	user, err := repo.FindUser(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": err.Error(),
-			"data":    nil,
+		c.JSON(http.StatusNotFound, Result{
+			Message: "User not found",
+			Error:   err.Error(),
 		})
-
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"status":  "success",
-		"message": "User created successfully",
-		"data":    createdUser,
+	c.JSON(http.StatusOK, Result{
+		Message: "User retrieved successfully",
+		Data:    user,
 	})
 }
 
 func GetUsersHandler(c *gin.Context) {
-	userRepo := models.NewUserRepository(database.DB)
-	users, err := userRepo.FindAll()
+	repo := repositories.New()
+	users, err := repo.FindAllUsers()
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": err.Error(),
-			"data":    nil,
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve users",
+			Error:   err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Users retrieved successfully",
-		"data":    users,
+	c.JSON(http.StatusOK, Result{
+		Message: "Users retrieved successfully",
+		Data:    users,
 	})
 }
 
 func DeleteUserHandler(c *gin.Context) {
-	id := c.Param("id")
+	repo := repositories.New()
 
-	userRepo := models.NewUserRepository(database.DB)
-	err := userRepo.Delete(id)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": err.Error(),
-			"data":    nil,
+	value, exists := c.Get(services.ClaimsKey{})
+	if !exists {
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve user claims",
+			Error:   "User claims not found in context",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "User deleted successfully",
-		"data":    nil,
+	claims, ok := value.(*services.Claims)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve user claims",
+			Error:   "Invalid claims format",
+		})
+		return
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, Result{
+			Message: "Invalid user ID",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	if claims.ID != id {
+		c.JSON(http.StatusForbidden, Result{
+			Message: "Access denied",
+			Error:   "You do not have permission to delete this user",
+		})
+		return
+	}
+
+	if err := repo.DeleteUser(id); err != nil {
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not delete user",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, Result{
+		Message: "User deleted successfully",
+		Data:    nil,
 	})
 }

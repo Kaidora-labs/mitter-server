@@ -1,0 +1,28 @@
+meta {
+  name: Register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{BASE_URL}}/auth/register
+  body: json
+  auth: bearer
+}
+
+body:json {
+  {
+    "firstName": "Simon",
+    "lastName": "Samuel",
+    "phoneNumber": "{{PHONE_NUMBER}}",
+    "emailAddress": "{{EMAIL_ADDRESS}}",
+    "walletAddress": "{{WALLET_ADDRESS}}",
+    "password": "{{PASSWORD}}",
+    "role": "INDIVIDUAL"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
