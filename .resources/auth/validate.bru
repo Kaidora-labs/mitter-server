@@ -1,7 +1,7 @@
 meta {
-  name: Validate Auth
+  name: Validate
   type: http
-  seq: 2
+  seq: 3
 }
 
 post {
@@ -12,14 +12,13 @@ post {
 
 body:json {
   {
-    "email_address": "{{EMAIL_ADDRESS}}",
-    "password": "{{PASSWORD}}",
+    "emailAddress": "{{EMAIL_ADDRESS}}",
     "otp": "{{OTP}}"
   }
 }
 
 vars:pre-request {
-  OTP: 625357
+  OTP: {{process.env.OTP}}
 }
 
 settings {

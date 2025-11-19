@@ -12,6 +12,6 @@ auth:bearer {
 }
 
 vars:pre-request {
-  USER_ID: e790ca83-0b38-404d-b624-1cfe90e23bd6
+  USER_ID: {{process.env.USER_ID}}
   TOKEN: {{process.env.TOKEN}}
 }

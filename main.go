@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/kaidora-labs/mitter-server/handlers"
+	"github.com/kaidora-labs/mitter-server/middlewares"
 	"github.com/kaidora-labs/mitter-server/repositories"
 )
 
@@ -25,18 +26,30 @@ func main() {
 	router := gin.Default()
 	router.SetTrustedProxies(nil)
 
-	router.POST("/auth/initiate", handlers.InitiateHandler)
-	router.POST("/auth/validate", handlers.ValidateHandler)
-	router.POST("/auth/reset", handlers.ResetHandler)
+	{
+		authGroup := router.Group("/auth")
+		authGroup.POST("/register", handlers.RegisterHandler)
+		authGroup.POST("/initiate", handlers.InitiateHandler)
+		authGroup.POST("/validate", handlers.ValidateHandler)
+	}
 
-	router.GET("/users", handlers.GetUsersHandler)
-	router.GET("/users/:id", handlers.GetUserHandler)
-	router.POST("/users", handlers.PostUserHandler)
-	router.DELETE("/users/:id", handlers.DeleteUserHandler)
+	{
+		userGroup := router.Group("/users")
+		userGroup.Use(middlewares.Auth())
 
-	router.GET("/businesses/:id", handlers.GetBusinessHandler)
-	router.PATCH("/businesses/:id", handlers.UpdateBusinessHandler)
-	router.DELETE("/businesses/:id", handlers.DeleteBusinessHandler)
+		userGroup.GET("/", handlers.GetUsersHandler)
+		userGroup.GET("/:id", handlers.GetUserHandler)
+		userGroup.DELETE("/:id", handlers.DeleteUserHandler)
+	}
+
+	{
+		businessGroup := router.Group("/businesses")
+		businessGroup.Use(middlewares.Auth())
+
+		businessGroup.GET("/:id", handlers.GetBusinessHandler)
+		businessGroup.PATCH("/:id", handlers.UpdateBusinessHandler)
+		businessGroup.DELETE("/:id", handlers.DeleteBusinessHandler)
+	}
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{

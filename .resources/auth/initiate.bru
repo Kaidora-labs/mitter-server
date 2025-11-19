@@ -1,5 +1,5 @@
 meta {
-  name: Initiate Auth
+  name: Initiate
   type: http
   seq: 2
 }
@@ -12,9 +12,8 @@ post {
 
 body:json {
   {
-    "email_address": "{{EMAIL_ADDRESS}}",
-    "password": "{{PASSWORD}}",
-    "otp": ""
+    "emailAddress": "{{EMAIL_ADDRESS}}",
+    "password": "{{PASSWORD}}"
   }
 }
 

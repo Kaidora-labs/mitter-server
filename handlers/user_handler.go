@@ -12,13 +12,38 @@ import (
 func GetUserHandler(c *gin.Context) {
 	repo := repositories.New()
 
+	value, exists := c.Get(services.ClaimsKey{})
+	if !exists {
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve user claims",
+			Error:   "User claims not found in context",
+		})
+		return
+	}
+
+	claims, ok := value.(*services.Claims)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve user claims",
+			Error:   "Invalid claims format",
+		})
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, Result{
 			Message: "Invalid user ID",
 			Error:   err.Error(),
 		})
+		return
+	}
 
+	if claims.ID != id {
+		c.JSON(http.StatusForbidden, Result{
+			Message: "Access denied",
+			Error:   "You do not have permission to access this user",
+		})
 		return
 	}
 
@@ -28,7 +53,6 @@ func GetUserHandler(c *gin.Context) {
 			Message: "User not found",
 			Error:   err.Error(),
 		})
-
 		return
 	}
 
@@ -47,7 +71,6 @@ func GetUsersHandler(c *gin.Context) {
 			Message: "Could not retrieve users",
 			Error:   err.Error(),
 		})
-
 		return
 	}
 
@@ -57,86 +80,26 @@ func GetUsersHandler(c *gin.Context) {
 	})
 }
 
-func PostUserHandler(c *gin.Context) {
-	repo := repositories.New()
-
-	var params repositories.CreateUserParams
-	if err := c.ShouldBindJSON(&params); err != nil {
-		c.JSON(http.StatusBadRequest, Result{
-			Message: "Missing or invalid fields",
-			Error:   err.Error(),
-		})
-
-		return
-	}
-
-	encryptedPassword, err := services.HashPassword(params.Password)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, Result{
-			Message: "Could not hash password",
-			Error:   err.Error(),
-		})
-
-		return
-	}
-	params.Password = encryptedPassword
-
-	user, err := repo.SaveUser(&params)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, Result{
-			Message: "Could not create user",
-			Error:   err.Error(),
-		})
-
-		return
-	}
-
-	mailer, err := services.NewMailService()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, Result{
-			Message: "Mail service down",
-			Error:   err.Error(),
-		})
-
-		return
-	}
-
-	otp, err := services.GenerateOTP(6)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, Result{
-			Message: "Could not generate OTP",
-			Error:   err.Error(),
-		})
-
-		return
-	}
-
-	if err := mailer.SendOTP(user.EmailAddress, otp); err != nil {
-		c.JSON(http.StatusInternalServerError, Result{
-			Message: "Could not send OTP",
-			Error:   err.Error(),
-		})
-
-		return
-	}
-
-	if err := repo.StoreOTP(c, user.ID, otp); err != nil {
-		c.JSON(http.StatusInternalServerError, Result{
-			Message: "Could not cache OTP",
-			Error:   err.Error(),
-		})
-
-		return
-	}
-
-	c.JSON(http.StatusAccepted, Result{
-		Message: "User verification in progress",
-		Data:    user,
-	})
-}
-
 func DeleteUserHandler(c *gin.Context) {
 	repo := repositories.New()
+
+	value, exists := c.Get(services.ClaimsKey{})
+	if !exists {
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve user claims",
+			Error:   "User claims not found in context",
+		})
+		return
+	}
+
+	claims, ok := value.(*services.Claims)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, Result{
+			Message: "Could not retrieve user claims",
+			Error:   "Invalid claims format",
+		})
+		return
+	}
 
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -144,7 +107,14 @@ func DeleteUserHandler(c *gin.Context) {
 			Message: "Invalid user ID",
 			Error:   err.Error(),
 		})
+		return
+	}
 
+	if claims.ID != id {
+		c.JSON(http.StatusForbidden, Result{
+			Message: "Access denied",
+			Error:   "You do not have permission to delete this user",
+		})
 		return
 	}
 
@@ -153,7 +123,6 @@ func DeleteUserHandler(c *gin.Context) {
 			Message: "Could not delete user",
 			Error:   err.Error(),
 		})
-
 		return
 	}
 
